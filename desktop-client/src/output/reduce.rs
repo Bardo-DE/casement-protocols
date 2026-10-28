@@ -3,7 +3,6 @@
 use super::event::{HeadChange, ModeChange, OutputEvent};
 use super::model::{Head, Mode};
 use super::set::Outputs;
-use super::units::Enabled;
 
 /// `outputs` after `event`. A change to an unknown key is ignored; `Done` records the serial;
 /// `ConfigResolved` does not touch the heads (the compositor sends the new head state next).
@@ -51,7 +50,7 @@ fn apply_head(head: &mut Head, change: HeadChange) {
         HeadChange::SerialNumber(serial) => head.serial_number = Some(serial),
         HeadChange::Enabled(enabled) => {
             head.enabled = enabled;
-            if enabled == Enabled::Off {
+            if !enabled {
                 head.current_mode = None;
             }
         }

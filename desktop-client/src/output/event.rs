@@ -1,10 +1,11 @@
 //! What `zwlr-output-management-v1` reports.
 
 use super::config::{ConfigOutcome, ConfigPurpose};
-use super::units::{AdaptiveSync, Enabled, Preferred, RefreshMilliHz, ScaleMilli, Transform};
+use super::units::{RefreshMilliHz, ScaleMilli};
 use crate::geometry::{Point, Size};
 use crate::keys::{ConfigId, HeadKey, ModeKey};
 use crate::names::OutputName;
+use casement_protocols::vocab::Transform;
 
 /// One property of a head changing.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -23,7 +24,7 @@ pub enum HeadChange {
     /// Serial number.
     SerialNumber(String),
     /// On or off.
-    Enabled(Enabled),
+    Enabled(bool),
     /// The mode in use.
     CurrentMode(ModeKey),
     /// Position.
@@ -33,7 +34,7 @@ pub enum HeadChange {
     /// Scale.
     Scale(ScaleMilli),
     /// Adaptive sync.
-    AdaptiveSync(AdaptiveSync),
+    AdaptiveSync(bool),
 }
 
 /// One property of a mode changing.
@@ -44,8 +45,8 @@ pub enum ModeChange {
     Size(Size),
     /// Refresh rate.
     Refresh(RefreshMilliHz),
-    /// Preferred or not.
-    Preferred(Preferred),
+    /// Whether the head prefers it.
+    Preferred(bool),
     /// The mode is gone.
     Finished,
 }

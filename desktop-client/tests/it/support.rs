@@ -78,14 +78,10 @@ pub fn sk(n: u64) -> desktop_client::SpaceKey {
     desktop_client::SpaceKey::new(n)
 }
 
-pub fn quire(event: desktop_client::quire::QuireEvent) -> DesktopEvent {
-    DesktopEvent::Quire(event)
-}
-
 pub fn window_change(
     key: ToplevelKey,
     change: desktop_client::quire::WindowChange,
 ) -> DesktopEvent {
-    use desktop_client::quire::{QuireEvent, WindowEvent};
-    quire(QuireEvent::Window(WindowEvent::Changed { key, change }))
+    use desktop_client::quire::WindowEvent;
+    DesktopEvent::Window(WindowEvent::Changed { key, change })
 }

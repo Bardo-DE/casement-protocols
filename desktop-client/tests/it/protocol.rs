@@ -10,7 +10,7 @@ use desktop_client::{
     AppKey, CommandRoute, DesktopBackend, Rect, SpaceKey, SpaceTarget, requires_on,
 };
 use desktop_client::{
-    DesktopCommand, GroupKey, OutputName, Protocol, ProtocolSet, Supports, SurfaceKey, ToplevelKey,
+    DesktopCommand, GroupKey, OutputName, Protocol, ProtocolSet, SurfaceKey, ToplevelKey,
     WorkspaceKey, missing, requires, supports,
 };
 
@@ -78,13 +78,8 @@ fn toplevel_commands_need_the_wlr_manager_only() {
     let wlr = ProtocolSet::empty().with(Protocol::WlrForeignToplevelManagement);
     let list_only = ProtocolSet::empty().with(Protocol::ExtForeignToplevelList);
     for command in toplevel_commands() {
-        assert_eq!(supports(&wlr, &command), Supports::Yes, "{:?}", command);
-        assert_eq!(
-            supports(&list_only, &command),
-            Supports::No,
-            "{:?}",
-            command
-        );
+        assert!(supports(&wlr, &command), "{:?}", command);
+        assert!(!supports(&list_only, &command), "{:?}", command);
         assert_eq!(
             missing(&list_only, &command),
             Some(Protocol::WlrForeignToplevelManagement)
@@ -96,8 +91,8 @@ fn toplevel_commands_need_the_wlr_manager_only() {
 fn workspace_commands_need_ext_workspace() {
     let offered = ProtocolSet::empty().with(Protocol::ExtWorkspace);
     for command in workspace_commands() {
-        assert_eq!(supports(&offered, &command), Supports::Yes, "{:?}", command);
-        assert_eq!(supports(&ProtocolSet::empty(), &command), Supports::No);
+        assert!(supports(&offered, &command), "{:?}", command);
+        assert!(!supports(&ProtocolSet::empty(), &command));
     }
 }
 
@@ -108,8 +103,8 @@ fn output_commands_need_wlr_output_management() {
         DesktopCommand::ApplyOutputs(OutputConfig::new(vec![])),
         DesktopCommand::TestOutputs(OutputConfig::new(vec![])),
     ] {
-        assert_eq!(supports(&offered, &command), Supports::Yes);
-        assert_eq!(supports(&ProtocolSet::empty(), &command), Supports::No);
+        assert!(supports(&offered, &command));
+        assert!(!supports(&ProtocolSet::empty(), &command));
     }
 }
 
@@ -132,12 +127,12 @@ fn capture_needs_both_the_copy_manager_and_the_output_source() {
     let command = DesktopCommand::CaptureOutput(CaptureRequest::new(OutputName::new("DP-1")));
     let copy = ProtocolSet::empty().with(Protocol::ExtImageCopyCapture);
     let both = copy.clone().with(Protocol::ExtOutputImageCaptureSource);
-    assert_eq!(supports(&copy, &command), Supports::No);
+    assert!(!supports(&copy, &command));
     assert_eq!(
         missing(&copy, &command),
         Some(Protocol::ExtOutputImageCaptureSource)
     );
-    assert_eq!(supports(&both, &command), Supports::Yes);
+    assert!(supports(&both, &command));
     assert_eq!(requires(&command).len(), 2);
 }
 
@@ -277,14 +272,14 @@ fn quire_commands_need_exactly_their_quire_protocols() {
         let offered = needs
             .iter()
             .fold(ProtocolSet::empty(), |set, p| set.with(*p));
-        assert_eq!(supports(&offered, &command), Supports::Yes, "{:?}", command);
+        assert!(supports(&offered, &command), "{:?}", command);
         assert_eq!(missing(&offered, &command), None);
         for dropped in &needs {
             let partial = needs
                 .iter()
                 .filter(|p| *p != dropped)
                 .fold(ProtocolSet::empty(), |set, p| set.with(*p));
-            assert_eq!(supports(&partial, &command), Supports::No);
+            assert!(!supports(&partial, &command));
             assert_eq!(missing(&partial, &command), Some(*dropped));
         }
     }
@@ -297,7 +292,7 @@ fn wlr_alone_cannot_do_what_only_quire_can() {
         Protocol::ExtForeignToplevelList,
     ]);
     for (command, _) in quire_only() {
-        assert_eq!(supports(&wlr, &command), Supports::No, "{:?}", command);
+        assert!(!supports(&wlr, &command), "{:?}", command);
     }
 }
 
@@ -309,13 +304,13 @@ fn on_the_quire_arm_the_window_commands_go_to_quire_not_wlr() {
         if command.route() == CommandRoute::MinimiseTarget {
             // The minimise target is the shell's: quire_shell_v1.
             assert_eq!(missing(&quire, &command), Some(Protocol::QuireShell));
-            assert_eq!(
-                supports(&quire.clone().with(Protocol::QuireShell), &command),
-                Supports::Yes
-            );
+            assert!(supports(
+                &quire.clone().with(Protocol::QuireShell),
+                &command
+            ));
         } else {
-            assert_eq!(supports(&quire, &command), Supports::Yes, "{command:?}");
-            assert_eq!(supports(&wlr_too, &command), Supports::Yes, "{command:?}");
+            assert!(supports(&quire, &command), "{command:?}");
+            assert!(supports(&wlr_too, &command), "{command:?}");
         }
         assert_eq!(
             requires_on(Some(DesktopBackend::Wlr), &command),
@@ -331,10 +326,10 @@ fn quire_without_the_ext_list_falls_back_to_wlr_for_the_window_commands() {
         Protocol::QuireDesktop,
         Protocol::WlrForeignToplevelManagement,
     ]);
-    assert_eq!(
-        supports(&offered, &DesktopCommand::Close(ToplevelKey::new(1))),
-        Supports::Yes
-    );
+    assert!(supports(
+        &offered,
+        &DesktopCommand::Close(ToplevelKey::new(1))
+    ));
     let only_quire = offering(&[Protocol::QuireDesktop]);
     assert_eq!(
         missing(&only_quire, &DesktopCommand::Close(ToplevelKey::new(1))),

@@ -8,7 +8,7 @@ use std::collections::BTreeSet;
 
 use casement_protocols::vocab::{
     ActorKind, Answer, AppLifeKind, AppVisibility, Assign, Attention, Corner, DragOutcome, Edited,
-    Emphasis, FrameMode, FullScreenBar, GlowCode, KeyGesture, LeaseState, MacMods, MaskReason,
+    Emphasis, FrameMode, FullScreenBar, GlowCode, HeldMods, KeyGesture, LeaseState, MaskReason,
     Memory, MenuSourceKind, Modality, Motion, OverviewMode, OverviewState, PlaceKind, PlaceTarget,
     PlacementMark, Power, ProofKind, Responsiveness, RevokeReason, RunMode, ScreenEdge,
     SensitivityLevel, ShellRole, Shown, SpaceActivity, SpaceKind, SplitSide, SubjectKind, Suspend,
@@ -152,15 +152,15 @@ const VOCAB: &[(&str, &str, Entries)] = &[
     ),
 ];
 
-/// `quire_shell_v1.mac_mods`, by entry name.
-const MAC_MODS: &[(&str, MacMods)] = &[
-    ("none", MacMods::NONE),
-    ("shift", MacMods::SHIFT),
-    ("control", MacMods::CONTROL),
-    ("option", MacMods::OPTION),
-    ("command", MacMods::COMMAND),
-    ("caps_lock", MacMods::CAPS_LOCK),
-    ("function", MacMods::FUNCTION),
+/// `quire_shell_v1.mac_mods` (the XML name), by entry name.
+const HELD_MODS: &[(&str, HeldMods)] = &[
+    ("none", HeldMods::NONE),
+    ("shift", HeldMods::SHIFT),
+    ("control", HeldMods::CONTROL),
+    ("option", HeldMods::OPTION),
+    ("command", HeldMods::COMMAND),
+    ("caps_lock", HeldMods::CAPS_LOCK),
+    ("function", HeldMods::FUNCTION),
 ];
 
 fn all_interfaces(protocols: &[Protocol]) -> Vec<&Interface> {
@@ -489,7 +489,7 @@ fn every_xml_enum_has_a_vocab_type() {
 }
 
 #[test]
-fn mac_mods_bits_are_the_vocab_constants() {
+fn held_mods_bits_are_the_vocab_constants() {
     let protocols = protocols();
     let shell = interface(&protocols, "quire_shell_v1");
     let mods = shell
@@ -503,7 +503,7 @@ fn mac_mods_bits_are_the_vocab_constants() {
         .iter()
         .map(|(name, code)| (name.as_str(), value(code)))
         .collect();
-    let want: Vec<(&str, u32)> = MAC_MODS
+    let want: Vec<(&str, u32)> = HELD_MODS
         .iter()
         .map(|(name, mods)| (*name, mods.0))
         .collect();

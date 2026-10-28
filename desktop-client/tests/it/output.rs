@@ -1,9 +1,10 @@
 //! The output reducer, configuration validation and completion.
 
+use casement_protocols::vocab::Transform;
 use desktop_client::output::{
-    AdaptiveSync, ConfigError, ConfigOutcome, ConfigPurpose, Enabled, HeadChange,
-    HeadChangeRequest, HeadConfig, HeadSettings, ModeChange, ModeChoice, OutputConfig, OutputEvent,
-    Preferred, RefreshMilliHz, ScaleMilli, Transform, complete,
+    ConfigError, ConfigOutcome, ConfigPurpose, HeadChange, HeadChangeRequest, HeadConfig,
+    HeadSettings, ModeChange, ModeChoice, OutputConfig, OutputEvent, RefreshMilliHz, ScaleMilli,
+    complete,
 };
 use desktop_client::{ConfigId, DesktopState, OutputName, Point, Size};
 
@@ -20,13 +21,13 @@ fn two_heads() -> DesktopState {
         }),
         mode_change(mk(10), ModeChange::Size(Size::new(1920, 1080))),
         mode_change(mk(10), ModeChange::Refresh(RefreshMilliHz::new(60_000))),
-        mode_change(mk(10), ModeChange::Preferred(Preferred::Yes)),
+        mode_change(mk(10), ModeChange::Preferred(true)),
         out(OutputEvent::ModeOpened {
             head: hk(1),
             mode: mk(11),
         }),
         mode_change(mk(11), ModeChange::Size(Size::new(1280, 720))),
-        head_change(hk(1), HeadChange::Enabled(Enabled::On)),
+        head_change(hk(1), HeadChange::Enabled(true)),
         head_change(hk(1), HeadChange::CurrentMode(mk(10))),
         head_change(hk(1), HeadChange::Scale(ScaleMilli::new(1500))),
         out(OutputEvent::HeadOpened(hk(2))),
@@ -51,12 +52,12 @@ fn heads_and_modes_build_up() {
     assert_eq!(outputs.heads().count(), 2);
     let dp = outputs.by_name(&OutputName::new("DP-1")).unwrap();
     assert_eq!(dp.key, hk(1));
-    assert_eq!(dp.enabled, Enabled::On);
+    assert!(dp.enabled);
     assert_eq!(dp.modes.len(), 2);
     let current = dp.current().unwrap();
     assert_eq!(current.size, Size::new(1920, 1080));
     assert_eq!(current.refresh, RefreshMilliHz::new(60_000));
-    assert_eq!(current.preferred, Preferred::Yes);
+    assert!(current.preferred);
     assert_eq!(dp.scale, ScaleMilli::new(1500));
     assert!(outputs.by_name(&OutputName::new("nope")).is_none());
 }
@@ -70,8 +71,8 @@ fn optional_properties_are_set_by_their_events() {
         head_change(hk(1), HeadChange::SerialNumber("S".into())),
         head_change(hk(1), HeadChange::PhysicalSize(Size::new(600, 340))),
         head_change(hk(1), HeadChange::Position(Point::new(10, 20))),
-        head_change(hk(1), HeadChange::Transform(Transform::Rotate90)),
-        head_change(hk(1), HeadChange::AdaptiveSync(AdaptiveSync::Enabled)),
+        head_change(hk(1), HeadChange::Transform(Transform::R90)),
+        head_change(hk(1), HeadChange::AdaptiveSync(true)),
         head_change(hk(1), HeadChange::Description("desc".into())),
     ]);
     let head = state.outputs.get(hk(1)).unwrap();
@@ -80,8 +81,8 @@ fn optional_properties_are_set_by_their_events() {
     assert_eq!(head.serial_number.as_deref(), Some("S"));
     assert_eq!(head.physical_size_mm, Some(Size::new(600, 340)));
     assert_eq!(head.position, Point::new(10, 20));
-    assert_eq!(head.transform, Transform::Rotate90);
-    assert_eq!(head.adaptive_sync, Some(AdaptiveSync::Enabled));
+    assert_eq!(head.transform, Transform::R90);
+    assert_eq!(head.adaptive_sync, Some(true));
     assert_eq!(head.description, "desc");
 }
 
@@ -93,14 +94,14 @@ fn disabling_clears_the_current_mode() {
             head: hk(1),
             mode: mk(10),
         }),
-        head_change(hk(1), HeadChange::Enabled(Enabled::On)),
+        head_change(hk(1), HeadChange::Enabled(true)),
         head_change(hk(1), HeadChange::CurrentMode(mk(10))),
     ];
     assert_eq!(
         run(events.clone()).outputs.get(hk(1)).unwrap().current_mode,
         Some(mk(10))
     );
-    events.push(head_change(hk(1), HeadChange::Enabled(Enabled::Off)));
+    events.push(head_change(hk(1), HeadChange::Enabled(false)));
     assert_eq!(run(events).outputs.get(hk(1)).unwrap().current_mode, None);
 }
 
@@ -197,15 +198,7 @@ fn unknown_keys_are_ignored() {
 }
 
 #[test]
-fn unit_codes() {
-    for code in 0..8 {
-        assert_eq!(Transform::from_code(code).unwrap().code(), code);
-    }
-    assert_eq!(Transform::from_code(8), None);
-    assert_eq!(Enabled::from_wire(0), Enabled::Off);
-    assert_eq!(Enabled::from_wire(-1), Enabled::On);
-    assert_eq!(AdaptiveSync::from_code(1), AdaptiveSync::Enabled);
-    assert_eq!(AdaptiveSync::from_code(0), AdaptiveSync::Disabled);
+fn scale_units() {
     assert_eq!(ScaleMilli::from_f64(1.5), ScaleMilli::new(1500));
     assert_eq!(ScaleMilli::from_f64(-2.0), ScaleMilli::new(0));
     assert_eq!(ScaleMilli::new(1250).to_f64(), 1.25);
@@ -349,7 +342,7 @@ fn complete_falls_back_to_the_preferred_then_the_first_mode() {
             head: hk(1),
             mode: mk(11),
         }),
-        mode_change(mk(11), ModeChange::Preferred(Preferred::Yes)),
+        mode_change(mk(11), ModeChange::Preferred(true)),
     ]);
     let parts = complete(
         &OutputConfig::new(vec![enable(1, HeadSettings::keep())]),

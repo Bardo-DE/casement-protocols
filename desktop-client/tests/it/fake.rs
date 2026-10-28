@@ -122,7 +122,7 @@ fn quire_fake() -> FakeDesktop {
 
 /// Scripts a toplevel with an identifier, its Quire window, an app and a Space.
 fn populate(desktop: &mut FakeDesktop) {
-    use desktop_client::quire::{QuireEvent, SpaceEvent, WindowEvent};
+    use desktop_client::quire::{SpaceEvent, WindowEvent};
     use desktop_client::{AppKey, SpaceKey, ToplevelIdentifier};
     for event in [
         top(ToplevelEvent::Opened(tk(1))),
@@ -131,11 +131,9 @@ fn populate(desktop: &mut FakeDesktop) {
             ToplevelChange::Identifier(ToplevelIdentifier::new("w-1")),
         ),
         top(ToplevelEvent::Done(tk(1))),
-        DesktopEvent::Quire(QuireEvent::Window(WindowEvent::Opened(tk(1)))),
-        DesktopEvent::Quire(QuireEvent::App(desktop_client::quire::AppEvent::Opened(
-            AppKey::new(1),
-        ))),
-        DesktopEvent::Quire(QuireEvent::Space(SpaceEvent::Opened(SpaceKey::new(1)))),
+        DesktopEvent::Window(WindowEvent::Opened(tk(1))),
+        DesktopEvent::App(desktop_client::quire::AppEvent::Opened(AppKey::new(1))),
+        DesktopEvent::Space(SpaceEvent::Opened(SpaceKey::new(1))),
     ] {
         desktop.script(event);
     }
@@ -267,11 +265,11 @@ fn the_minimise_target_needs_the_window_identifier_on_the_quire_arm() {
 
 #[test]
 fn quire_events_reduce_through_the_fake_like_any_other() {
-    use desktop_client::quire::{QuireEvent, ShellEvent};
+    use desktop_client::quire::ShellEvent;
     let mut desktop = quire_fake();
-    desktop.script(DesktopEvent::Quire(QuireEvent::Shell(
-        ShellEvent::SwitcherShown { selected: 3 },
-    )));
+    desktop.script(DesktopEvent::Shell(ShellEvent::SwitcherShown {
+        selected: 3,
+    }));
     desktop.advance_all();
     assert_eq!(desktop.state().quire.shell().switcher.selected(), Some(3));
     assert_eq!(desktop.drain_events().len(), 1);

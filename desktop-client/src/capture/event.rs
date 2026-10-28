@@ -4,7 +4,7 @@ use std::time::Duration;
 
 use super::frame::ShmFormat;
 use crate::geometry::{Rect, Size};
-use crate::output::Transform;
+use casement_protocols::vocab::Transform;
 
 /// Why a capture failed (`ext_image_copy_capture_frame_v1.failure_reason` and the session's
 /// `stopped`).

@@ -4,8 +4,8 @@
 //! A compositor that offers the private protocols (and the ext toplevel list, which names its
 //! windows) reports what wlr cannot: an app's identity and life, a window's role, place,
 //! geometry, emphasis and placement, Spaces with their order, and the shell's modifiers,
-//! switcher and overview. [`QuireEvent`] carries all of it into the same pure
-//! [`crate::reduce`]; [`Quire`] is the result, inside [`crate::DesktopState::quire`].
+//! switcher and overview. The `App`, `Window`, `Space`, `Active` and `Shell` arms of
+//! [`crate::DesktopEvent`] carry all of it into the same pure [`crate::reduce`]; [`Quire`] is the result, inside [`crate::DesktopState::quire`].
 //!
 //! A window is keyed by the [`crate::ToplevelKey`] of its ext handle, so title and app id stay
 //! on [`crate::toplevel::Toplevel`], and the reducer projects the Quire state onto the
@@ -15,7 +15,6 @@
 
 mod app;
 mod ask;
-mod event;
 mod lifecycle;
 mod link;
 mod project;
@@ -29,7 +28,6 @@ mod window;
 
 pub use app::{AppChange, AppEvent, MenuSource, QuireApp};
 pub use ask::PermissionAsk;
-pub use event::QuireEvent;
 pub use lifecycle::Lifecycle;
 pub use link::{Linker, WindowObject};
 pub use set::{Active, Quire};
@@ -43,4 +41,4 @@ pub use trial::DisplayTrial;
 pub use window::{Lease, QuireWindow, SpacePlace, WindowChange, WindowEvent, WindowGeometry};
 
 pub(crate) use project::project_toplevels;
-pub(crate) use reduce::reduce_quire;
+pub(crate) use reduce::{reduce_app, reduce_note, reduce_space, reduce_window, set_active};

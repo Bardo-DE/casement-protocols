@@ -2,8 +2,8 @@
 
 use std::time::Duration;
 
+use casement_protocols::vocab::Transform;
 use desktop_client::capture::{CaptureEvent, CaptureFailure, CapturePhase, Captures, ShmFormat};
-use desktop_client::output::Transform;
 use desktop_client::{DesktopState, Rect, Size};
 
 use crate::support::{cap, cid, run};
@@ -86,7 +86,7 @@ fn no_size_or_an_empty_size_fails_the_capture() {
 fn ready_builds_the_frame() {
     let mut events = negotiation(1);
     events.extend([
-        cap(cid(1), CaptureEvent::Transform(Transform::Rotate90)),
+        cap(cid(1), CaptureEvent::Transform(Transform::R90)),
         cap(cid(1), CaptureEvent::Damage(Rect::new(0, 0, 2, 1))),
         cap(cid(1), CaptureEvent::PresentationTime(Duration::new(5, 6))),
         cap(
@@ -105,7 +105,7 @@ fn ready_builds_the_frame() {
     assert_eq!(frame.stride, 8);
     // The first readable format offered wins: xrgb8888 came before argb8888.
     assert_eq!(frame.format, ShmFormat::XRGB8888);
-    assert_eq!(frame.transform, Transform::Rotate90);
+    assert_eq!(frame.transform, Transform::R90);
     assert_eq!(frame.damage, vec![Rect::new(0, 0, 2, 1)]);
     assert_eq!(frame.presented, Some(Duration::new(5, 6)));
     assert_eq!(frame.pixels, vec![1; 8]);

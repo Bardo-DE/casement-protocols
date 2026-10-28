@@ -20,17 +20,13 @@ use crate::geometry::Rect;
 use crate::keys::{AppKey, SpaceKey};
 use crate::names::{AppId, AppSubject, SpaceId, ToplevelIdentifier};
 use crate::quire::{
-    AppChange, AppEvent, Lease, MenuSource, QuireEvent, SpaceChange, SpaceEvent, SpacePlace,
-    WindowChange, WindowGeometry, WindowObject,
+    AppChange, AppEvent, Lease, MenuSource, SpaceChange, SpaceEvent, SpacePlace, WindowChange,
+    WindowGeometry, WindowObject,
 };
 
-fn emit(wire: &mut Wire, event: QuireEvent) {
-    wire.emit(DesktopEvent::Quire(event));
-}
-
-fn emit_all(wire: &mut Wire, events: Vec<QuireEvent>) {
+fn emit_all(wire: &mut Wire, events: Vec<DesktopEvent>) {
     for event in events {
-        emit(wire, event);
+        wire.emit(event);
     }
 }
 
@@ -45,7 +41,7 @@ pub(super) fn on_manager(
         Event::App { id } => {
             let key = AppKey::new(number_of(&id));
             wire.handles.apps.insert(key, id);
-            emit(wire, QuireEvent::App(AppEvent::Opened(key)));
+            wire.emit(DesktopEvent::App(AppEvent::Opened(key)));
         }
         Event::Window { id } => {
             wire.handles
@@ -55,7 +51,7 @@ pub(super) fn on_manager(
         Event::Space { id } => {
             let key = SpaceKey::new(number_of(&id));
             wire.handles.spaces.insert(key, id);
-            emit(wire, QuireEvent::Space(SpaceEvent::Opened(key)));
+            wire.emit(DesktopEvent::Space(SpaceEvent::Opened(key)));
         }
         Event::Active { app, key, actor } => {
             let app = app.as_ref().map(|a| AppKey::new(number_of(a)));
@@ -63,7 +59,7 @@ pub(super) fn on_manager(
                 .as_ref()
                 .and_then(|w| wire.linker.key_of(WindowObject::new(number_of(w))));
             let actor = vocab(actor).unwrap_or(ActorKind::Unknown);
-            emit(wire, QuireEvent::Active { app, key, actor });
+            wire.emit(DesktopEvent::Active { app, key, actor });
         }
         Event::Finished => {
             proxy.destroy();
@@ -76,7 +72,7 @@ pub(super) fn on_manager(
 fn app_change(wire: &mut Wire, proxy: &QuireDesktopAppV1, change: Option<AppChange>) {
     if let Some(change) = change {
         let key = AppKey::new(number_of(proxy));
-        emit(wire, QuireEvent::App(AppEvent::Changed { key, change }));
+        wire.emit(DesktopEvent::App(AppEvent::Changed { key, change }));
     }
 }
 
@@ -111,11 +107,11 @@ pub(super) fn on_app(
         Event::Attention { level } => vocab(level).map(AppChange::Attention),
         Event::Mru { rank } => Some(AppChange::Mru(rank)),
         Event::Done => {
-            emit(wire, QuireEvent::App(AppEvent::Done(key)));
+            wire.emit(DesktopEvent::App(AppEvent::Done(key)));
             None
         }
         Event::Closed => {
-            emit(wire, QuireEvent::App(AppEvent::Closed(key)));
+            wire.emit(DesktopEvent::App(AppEvent::Closed(key)));
             proxy.destroy();
             wire.handles.apps.remove(&key);
             None
@@ -129,7 +125,7 @@ fn window_change(
     wire: &mut Wire,
     object: WindowObject,
     change: Option<WindowChange>,
-) -> Vec<QuireEvent> {
+) -> Vec<DesktopEvent> {
     match change {
         Some(change) => wire.linker.change(object, change),
         None => Vec::new(),
@@ -242,11 +238,11 @@ pub(super) fn on_space(
         Event::Output { output } => wire.output_name(&output).map(SpaceChange::Output),
         Event::Activity { activity } => vocab(activity).map(SpaceChange::Activity),
         Event::Done => {
-            emit(wire, QuireEvent::Space(SpaceEvent::Done(key)));
+            wire.emit(DesktopEvent::Space(SpaceEvent::Done(key)));
             None
         }
         Event::Removed => {
-            emit(wire, QuireEvent::Space(SpaceEvent::Closed(key)));
+            wire.emit(DesktopEvent::Space(SpaceEvent::Closed(key)));
             proxy.destroy();
             wire.handles.spaces.remove(&key);
             None
@@ -254,7 +250,7 @@ pub(super) fn on_space(
         _ => None,
     };
     if let Some(change) = change {
-        emit(wire, QuireEvent::Space(SpaceEvent::Changed { key, change }));
+        wire.emit(DesktopEvent::Space(SpaceEvent::Changed { key, change }));
     }
 }
 

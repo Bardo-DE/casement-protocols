@@ -30,8 +30,8 @@ use crate::error::CommandError;
 use crate::event::DesktopEvent;
 use crate::geometry::{Rect, Size};
 use crate::keys::CaptureId;
-use crate::output::Transform;
 use crate::protocol::Protocol;
+use casement_protocols::vocab::{Transform, WireCode};
 
 /// The protocol objects of one capture in flight.
 #[derive(Debug)]
@@ -222,7 +222,7 @@ pub(super) fn on_frame(
     use ext_image_copy_capture_frame_v1::Event;
     match event {
         Event::Transform { transform } => {
-            if let Some(transform) = Transform::from_code(raw(transform)) {
+            if let Ok(transform) = Transform::from_code(raw(transform)) {
                 capture_event(wire, id, CaptureEvent::Transform(transform));
             }
         }

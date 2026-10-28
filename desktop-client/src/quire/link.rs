@@ -8,8 +8,8 @@
 
 use std::collections::BTreeMap;
 
-use super::event::QuireEvent;
 use super::window::{WindowChange, WindowEvent};
+use crate::event::DesktopEvent;
 use crate::keys::{ToplevelKey, key};
 use crate::names::ToplevelIdentifier;
 
@@ -78,7 +78,11 @@ impl Linker {
 
     /// An ext handle announced its identifier. Returns the events of a window that was waiting
     /// for it.
-    pub fn listed(&mut self, key: ToplevelKey, identifier: ToplevelIdentifier) -> Vec<QuireEvent> {
+    pub fn listed(
+        &mut self,
+        key: ToplevelKey,
+        identifier: ToplevelIdentifier,
+    ) -> Vec<DesktopEvent> {
         self.listed.insert(identifier.clone(), key);
         let waiting = self
             .objects
@@ -106,7 +110,7 @@ impl Linker {
         &mut self,
         object: WindowObject,
         identifier: ToplevelIdentifier,
-    ) -> Vec<QuireEvent> {
+    ) -> Vec<DesktopEvent> {
         if matches!(self.objects.get(&object), Some(Standing::Linked(_))) {
             return Vec::new();
         }
@@ -129,7 +133,7 @@ impl Linker {
     }
 
     /// A property of a window object changed.
-    pub fn change(&mut self, object: WindowObject, change: WindowChange) -> Vec<QuireEvent> {
+    pub fn change(&mut self, object: WindowObject, change: WindowChange) -> Vec<DesktopEvent> {
         match self.objects.get_mut(&object) {
             Some(Standing::Linked(key)) => {
                 vec![window_event(WindowEvent::Changed { key: *key, change })]
@@ -146,7 +150,7 @@ impl Linker {
     }
 
     /// A window object's burst is complete.
-    pub fn done(&mut self, object: WindowObject) -> Vec<QuireEvent> {
+    pub fn done(&mut self, object: WindowObject) -> Vec<DesktopEvent> {
         match self.objects.get_mut(&object) {
             Some(Standing::Linked(key)) => vec![window_event(WindowEvent::Done(*key))],
             Some(Standing::Waiting { held, .. }) => {
@@ -161,7 +165,7 @@ impl Linker {
     }
 
     /// A window object closed (its last event).
-    pub fn closed(&mut self, object: WindowObject) -> Vec<QuireEvent> {
+    pub fn closed(&mut self, object: WindowObject) -> Vec<DesktopEvent> {
         match self.objects.remove(&object) {
             Some(Standing::Linked(key)) => vec![window_event(WindowEvent::Closed(key))],
             _ => Vec::new(),
@@ -179,7 +183,7 @@ impl Linker {
     }
 
     /// Links `object` to `key` and returns `Opened` and everything held, in order.
-    fn link(&mut self, object: WindowObject, key: ToplevelKey) -> Vec<QuireEvent> {
+    fn link(&mut self, object: WindowObject, key: ToplevelKey) -> Vec<DesktopEvent> {
         let held = match self.objects.insert(object, Standing::Linked(key)) {
             Some(Standing::Waiting { held, .. }) => held,
             _ => Vec::new(),
@@ -195,6 +199,6 @@ impl Linker {
     }
 }
 
-fn window_event(event: WindowEvent) -> QuireEvent {
-    QuireEvent::Window(event)
+fn window_event(event: WindowEvent) -> DesktopEvent {
+    DesktopEvent::Window(event)
 }

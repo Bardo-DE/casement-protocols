@@ -5,15 +5,15 @@ use std::collections::BTreeSet;
 
 use casement_protocols::vocab::{
     ActorKind, AppLifeKind, AppVisibility, AskId, Attention, Corner, DragOutcome, Emphasis,
-    GlowCode, KeyGesture, LeaseState, MacMods, Memory, MenuSourceKind, Modality, OverviewMode,
+    GlowCode, HeldMods, KeyGesture, LeaseState, Memory, MenuSourceKind, Modality, OverviewMode,
     OverviewState, PlacementMark, Power, ProofKind, Responsiveness, ScreenEdge, SensitivityLevel,
     Shown, SpaceActivity, SpaceKind, SplitSide, SubjectKind, TrialId, WindowEntries, WindowRole,
     WindowStateKind,
 };
 use desktop_client::quire::{
-    AppChange, AppEvent, DisplayTrial, Lease, Linker, MenuSource, PermissionAsk, QuireEvent,
-    RevealOutput, ShellEvent, SpaceChange, SpaceEvent, SpacePlace, WindowChange, WindowEvent,
-    WindowGeometry, WindowObject,
+    AppChange, AppEvent, DisplayTrial, Lease, Linker, MenuSource, PermissionAsk, RevealOutput,
+    ShellEvent, SpaceChange, SpaceEvent, SpacePlace, WindowChange, WindowEvent, WindowGeometry,
+    WindowObject,
 };
 use desktop_client::toplevel::{Announcement, ToplevelChange, ToplevelEvent, ToplevelFlag};
 use desktop_client::workspace::{WorkspaceChange, WorkspaceEvent, WorkspaceFlag};
@@ -22,10 +22,10 @@ use desktop_client::{
     ToplevelIdentifier, reduce,
 };
 
-use crate::support::{ak, quire, run, sk, tk, top, top_change, window_change, wk, ws, ws_change};
+use crate::support::{ak, run, sk, tk, top, top_change, window_change, wk, ws, ws_change};
 
 fn app(event: AppEvent) -> DesktopEvent {
-    quire(QuireEvent::App(event))
+    DesktopEvent::App(event)
 }
 
 fn app_change(n: u64, change: AppChange) -> DesktopEvent {
@@ -33,7 +33,7 @@ fn app_change(n: u64, change: AppChange) -> DesktopEvent {
 }
 
 fn space(event: SpaceEvent) -> DesktopEvent {
-    quire(QuireEvent::Space(event))
+    DesktopEvent::Space(event)
 }
 
 fn space_change(n: u64, change: SpaceChange) -> DesktopEvent {
@@ -41,11 +41,11 @@ fn space_change(n: u64, change: SpaceChange) -> DesktopEvent {
 }
 
 fn window(event: WindowEvent) -> DesktopEvent {
-    quire(QuireEvent::Window(event))
+    DesktopEvent::Window(event)
 }
 
 fn shell(event: ShellEvent) -> DesktopEvent {
-    quire(QuireEvent::Shell(event))
+    DesktopEvent::Shell(event)
 }
 
 /// A toplevel with a key, announced.
@@ -149,11 +149,11 @@ fn a_closed_app_leaves_the_active_pair_and_its_windows() {
         app(AppEvent::Opened(ak(5))),
         app(AppEvent::Done(ak(5))),
         window_change(tk(1), WindowChange::App(ak(5))),
-        quire(QuireEvent::Active {
+        DesktopEvent::Active {
             app: Some(ak(5)),
             key: Some(tk(1)),
             actor: ActorKind::User,
-        }),
+        },
     ]);
     let open = run(events.clone());
     assert_eq!(open.quire.windows_of(ak(5)).count(), 1);
@@ -297,11 +297,11 @@ fn a_closed_window_object_leaves_the_key_and_the_parent_links() {
     events.extend(with_window(2));
     events.extend([
         window_change(tk(2), WindowChange::Parent(Some(tk(1)))),
-        quire(QuireEvent::Active {
+        DesktopEvent::Active {
             app: None,
             key: Some(tk(1)),
             actor: ActorKind::User,
-        }),
+        },
         window(WindowEvent::Closed(tk(1))),
     ]);
     let state = run(events);
@@ -364,11 +364,11 @@ fn quire_state_is_projected_onto_the_toplevel_flags() {
             },
         ));
         if key {
-            events.push(quire(QuireEvent::Active {
+            events.push(DesktopEvent::Active {
                 app: None,
                 key: Some(tk(1)),
                 actor: ActorKind::User,
-            }));
+            });
         }
         let state = run(events);
         let flags: BTreeSet<_> = state.toplevels.get(tk(1)).unwrap().flags.iter().collect();
@@ -381,11 +381,11 @@ fn the_key_moves_between_windows_and_the_flags_follow() {
     let mut events = with_window(1);
     events.extend(with_window(2));
     for key in [tk(1), tk(2)] {
-        events.push(quire(QuireEvent::Active {
+        events.push(DesktopEvent::Active {
             app: None,
             key: Some(key),
             actor: ActorKind::User,
-        }));
+        });
     }
     let state = run(events);
     assert_eq!(state.toplevels.activated().map(|t| t.key), Some(tk(2)));
@@ -528,16 +528,16 @@ fn a_space_is_shown_when_its_workspace_is_active() {
 #[test]
 fn the_active_pair_is_replaced_whole() {
     let state = run([
-        quire(QuireEvent::Active {
+        DesktopEvent::Active {
             app: Some(ak(1)),
             key: Some(tk(1)),
             actor: ActorKind::User,
-        }),
-        quire(QuireEvent::Active {
+        },
+        DesktopEvent::Active {
             app: None,
             key: None,
             actor: ActorKind::Cli,
-        }),
+        },
     ]);
     let active = state.quire.active();
     assert_eq!(
@@ -550,19 +550,19 @@ fn the_active_pair_is_replaced_whole() {
 fn modifiers_are_kept_with_the_surface_they_were_reported_for() {
     let state = run([shell(ShellEvent::Modifiers {
         surface: Some(SurfaceKey::new(4)),
-        mods: MacMods::COMMAND.with(MacMods::SHIFT),
+        mods: HeldMods::COMMAND.with(HeldMods::SHIFT),
     })]);
     let s = state.quire.shell();
-    assert!(s.mods.holds(MacMods::COMMAND));
+    assert!(s.mods.holds(HeldMods::COMMAND));
     assert_eq!(s.mods_surface, Some(SurfaceKey::new(4)));
     let released = reduce(
         state,
         shell(ShellEvent::Modifiers {
             surface: None,
-            mods: MacMods::NONE,
+            mods: HeldMods::NONE,
         }),
     );
-    assert_eq!(released.quire.shell().mods, MacMods::NONE);
+    assert_eq!(released.quire.shell().mods, HeldMods::NONE);
 }
 
 #[test]
@@ -887,19 +887,22 @@ fn the_handle_first_then_the_window_links_at_the_window_identifier() {
     let mut linker = Linker::default();
     assert!(linker.listed(tk(1), id("a")).is_empty());
     let events = linker.identified(obj(9), id("a"));
-    assert_eq!(events, vec![QuireEvent::Window(WindowEvent::Opened(tk(1)))]);
+    assert_eq!(
+        events,
+        vec![DesktopEvent::Window(WindowEvent::Opened(tk(1)))]
+    );
     assert_eq!(linker.key_of(obj(9)), Some(tk(1)));
     assert_eq!(linker.object_of(tk(1)), Some(obj(9)));
     assert_eq!(
         linker.change(obj(9), state_change()),
-        vec![QuireEvent::Window(WindowEvent::Changed {
+        vec![DesktopEvent::Window(WindowEvent::Changed {
             key: tk(1),
             change: state_change()
         })]
     );
     assert_eq!(
         linker.done(obj(9)),
-        vec![QuireEvent::Window(WindowEvent::Done(tk(1)))]
+        vec![DesktopEvent::Window(WindowEvent::Done(tk(1)))]
     );
 }
 
@@ -920,16 +923,16 @@ fn the_window_first_holds_its_events_until_the_handle_names_it() {
     assert_eq!(linker.key_of(obj(9)), None);
     let events = linker.listed(tk(4), id("a"));
     let want = vec![
-        QuireEvent::Window(WindowEvent::Opened(tk(4))),
-        QuireEvent::Window(WindowEvent::Changed {
+        DesktopEvent::Window(WindowEvent::Opened(tk(4))),
+        DesktopEvent::Window(WindowEvent::Changed {
             key: tk(4),
             change: state_change(),
         }),
-        QuireEvent::Window(WindowEvent::Changed {
+        DesktopEvent::Window(WindowEvent::Changed {
             key: tk(4),
             change: WindowChange::Emphasis(Emphasis::Key),
         }),
-        QuireEvent::Window(WindowEvent::Done(tk(4))),
+        DesktopEvent::Window(WindowEvent::Done(tk(4))),
     ];
     assert_eq!(events, want, "in the order they arrived");
 }
@@ -953,7 +956,7 @@ fn a_closed_window_reports_once_and_a_waiting_one_is_forgotten() {
     linker.identified(obj(9), id("a"));
     assert_eq!(
         linker.closed(obj(9)),
-        vec![QuireEvent::Window(WindowEvent::Closed(tk(1)))]
+        vec![DesktopEvent::Window(WindowEvent::Closed(tk(1)))]
     );
     assert!(linker.closed(obj(9)).is_empty());
     assert_eq!(linker.object_of(tk(1)), None);
@@ -991,7 +994,7 @@ fn linker_output_reduces_into_a_window_under_its_toplevel() {
     linker.identified(obj(9), id("a"));
     linker.change(obj(9), state_change());
     linker.done(obj(9));
-    events.extend(linker.listed(tk(1), id("a")).into_iter().map(quire));
+    events.extend(linker.listed(tk(1), id("a")));
     let state = run(events);
     let w = state.quire.window(tk(1)).unwrap();
     assert_eq!(w.state, WindowStateKind::Filled);

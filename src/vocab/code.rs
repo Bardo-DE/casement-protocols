@@ -11,6 +11,14 @@ pub trait WireCode: Sized + Copy + 'static {
     fn code(self) -> u32;
     /// The value a wire code names.
     fn from_code(code: u32) -> Result<Self, CodeError>;
+
+    /// The generated enum of the same name that carries this value's code (the server or client
+    /// binding of the XML enum); `None` for a code the XML lacks. `tests/it/vocab_codes.rs`
+    /// proves every vocab enum and its generated twin accept the same codes, so a vocab value
+    /// that has a twin always converts.
+    fn to_wire<W: TryFrom<u32>>(self) -> Option<W> {
+        W::try_from(self.code()).ok()
+    }
 }
 
 /// A wire code no value of the set carries.

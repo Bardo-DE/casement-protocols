@@ -21,4 +21,4 @@ pub use event::{HeadChange, ModeChange, OutputEvent};
 pub use model::{Head, Mode};
 pub(crate) use reduce::reduce_outputs;
 pub use set::Outputs;
-pub use units::{AdaptiveSync, Enabled, Preferred, RefreshMilliHz, ScaleMilli, Transform};
+pub use units::{RefreshMilliHz, ScaleMilli};

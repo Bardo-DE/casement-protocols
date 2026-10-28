@@ -107,7 +107,7 @@ pub(super) fn on_listed(
             change(wire, key, ToplevelChange::Identifier(identifier.clone()));
             // On the Quire arm the window object of the same identifier may be waiting.
             for event in wire.linker.listed(key, identifier) {
-                wire.emit(DesktopEvent::Quire(event));
+                wire.emit(event);
             }
         }
         Event::Done => {

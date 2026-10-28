@@ -36,15 +36,15 @@
 //! Ask whether the compositor can do something before offering it:
 //!
 //! ```
-//! use desktop_client::{DesktopCommand, ProtocolSet, Supports, ToplevelKey, supports};
+//! use desktop_client::{DesktopCommand, ProtocolSet, ToplevelKey, supports};
 //!
 //! let offered = ProtocolSet::from_interfaces([
 //!     "ext_foreign_toplevel_list_v1",
 //!     "zwlr_foreign_toplevel_manager_v1",
 //! ]);
 //! let close = DesktopCommand::Close(ToplevelKey::new(1));
-//! assert_eq!(supports(&offered, &close), Supports::Yes);
-//! assert_eq!(supports(&ProtocolSet::empty(), &close), Supports::No);
+//! assert!(supports(&offered, &close));
+//! assert!(!supports(&ProtocolSet::empty(), &close));
 //! ```
 
 pub mod capture;
@@ -90,4 +90,4 @@ pub use names::{AppId, AppSubject, OutputName, SpaceId, ToplevelIdentifier};
 pub use protocol::{Protocol, ProtocolSet};
 pub use reduce::reduce;
 pub use state::DesktopState;
-pub use supports::{Supports, missing, requires, requires_on, supports};
+pub use supports::{missing, requires, requires_on, supports};

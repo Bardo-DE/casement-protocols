@@ -1,9 +1,10 @@
 //! A head and its modes.
 
-use super::units::{AdaptiveSync, Enabled, Preferred, RefreshMilliHz, ScaleMilli, Transform};
+use super::units::{RefreshMilliHz, ScaleMilli};
 use crate::geometry::{Point, Size};
 use crate::keys::{HeadKey, ModeKey};
 use crate::names::OutputName;
+use casement_protocols::vocab::Transform;
 
 /// A mode a head can run.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -16,7 +17,7 @@ pub struct Mode {
     /// Refresh rate.
     pub refresh: RefreshMilliHz,
     /// Whether the head prefers it.
-    pub preferred: Preferred,
+    pub preferred: bool,
 }
 
 impl Mode {
@@ -26,7 +27,7 @@ impl Mode {
             key,
             size: Size::default(),
             refresh: RefreshMilliHz::new(0),
-            preferred: Preferred::No,
+            preferred: false,
         }
     }
 }
@@ -50,7 +51,7 @@ pub struct Head {
     /// Serial number, when known.
     pub serial_number: Option<String>,
     /// On or off.
-    pub enabled: Enabled,
+    pub enabled: bool,
     /// Every mode, in the order announced.
     pub modes: Vec<Mode>,
     /// The mode in use; `None` while off.
@@ -62,7 +63,7 @@ pub struct Head {
     /// Scale.
     pub scale: ScaleMilli,
     /// Adaptive sync; `None` when the compositor does not say (protocol version 4).
-    pub adaptive_sync: Option<AdaptiveSync>,
+    pub adaptive_sync: Option<bool>,
 }
 
 impl Head {
@@ -76,7 +77,7 @@ impl Head {
             make: None,
             model: None,
             serial_number: None,
-            enabled: Enabled::Off,
+            enabled: false,
             modes: Vec::new(),
             current_mode: None,
             position: Point::default(),

@@ -113,7 +113,7 @@ pub enum DesktopCommand {
         /// The new position.
         position: u32,
     },
-    /// Add a Space on an output; it arrives as a `QuireEvent::Space`. Quire arm.
+    /// Add a Space on an output; it arrives as a `DesktopEvent::Space`. Quire arm.
     CreateSpace {
         /// The output.
         output: OutputName,

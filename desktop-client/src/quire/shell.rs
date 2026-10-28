@@ -11,7 +11,7 @@ use crate::geometry::Rect;
 use crate::keys::SurfaceKey;
 use crate::names::{AppId, OutputName, SpaceId, ToplevelIdentifier};
 use casement_protocols::vocab::{
-    AskId, Corner, DragOutcome, KeyGesture, MacMods, OverviewMode, OverviewState, ScreenEdge,
+    AskId, Corner, DragOutcome, HeldMods, KeyGesture, OverviewMode, OverviewState, ScreenEdge,
     Shown, SplitSide, TrialId, WindowEntries,
 };
 
@@ -28,7 +28,7 @@ pub enum ShellEvent {
         /// The shell surface under the pointer.
         surface: Option<SurfaceKey>,
         /// The keys held, before any per-app remapping.
-        mods: MacMods,
+        mods: HeldMods,
     },
     /// A modifier gesture was recognised (summon, hold start, hold end, hold cancel).
     KeyGesture(KeyGesture),
@@ -416,7 +416,7 @@ impl Reveals {
 #[non_exhaustive]
 pub struct Shell {
     /// The modifiers held over a shell surface at the last report.
-    pub mods: MacMods,
+    pub mods: HeldMods,
     /// The surface that report was for.
     pub mods_surface: Option<SurfaceKey>,
     /// The app switcher.
@@ -432,7 +432,7 @@ pub struct Shell {
 impl Default for Shell {
     fn default() -> Self {
         Self {
-            mods: MacMods::NONE,
+            mods: HeldMods::NONE,
             mods_surface: None,
             switcher: Switcher::default(),
             overview: Overview::default(),

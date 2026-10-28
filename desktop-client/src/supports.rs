@@ -4,15 +4,6 @@ use crate::backend::{DesktopBackend, backend_for};
 use crate::command::{CommandRoute, DesktopCommand};
 use crate::protocol::{Protocol, ProtocolSet};
 
-/// The answer of [`supports`].
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Supports {
-    /// Every protocol the command needs is offered.
-    Yes,
-    /// At least one is missing.
-    No,
-}
-
 /// What a window command needs on the Quire arm: its model and the ext list that names windows.
 const QUIRE_WINDOW: &[Protocol] = &[Protocol::QuireDesktop, Protocol::ExtForeignToplevelList];
 /// What an app or Space command needs.
@@ -81,9 +72,6 @@ pub fn missing(offered: &ProtocolSet, command: &DesktopCommand) -> Option<Protoc
 /// workspace that lacks the ability, a closed toplevel); this answers the protocol question.
 /// Whether this client bound `quire_shell_v1` is the caller's choice, not the offer's; see
 /// `admit`.
-pub fn supports(offered: &ProtocolSet, command: &DesktopCommand) -> Supports {
-    match missing(offered, command) {
-        None => Supports::Yes,
-        Some(_) => Supports::No,
-    }
+pub fn supports(offered: &ProtocolSet, command: &DesktopCommand) -> bool {
+    missing(offered, command).is_none()
 }

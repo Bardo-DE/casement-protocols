@@ -4,9 +4,10 @@ use std::collections::BTreeSet;
 
 use super::model::Head;
 use super::set::Outputs;
-use super::units::{AdaptiveSync, RefreshMilliHz, ScaleMilli, Transform};
+use super::units::{RefreshMilliHz, ScaleMilli};
 use crate::geometry::{Point, Size};
 use crate::keys::{HeadKey, ModeKey};
+use casement_protocols::vocab::Transform;
 
 /// A full configuration: every head the client mentions. A head left out keeps its state
 /// (the protocol's rule is that a configuration must mention every enabled head; the wire
@@ -116,7 +117,7 @@ pub struct HeadSettings {
     /// Scale.
     pub scale: Option<ScaleMilli>,
     /// Adaptive sync.
-    pub adaptive_sync: Option<AdaptiveSync>,
+    pub adaptive_sync: Option<bool>,
 }
 
 impl HeadSettings {

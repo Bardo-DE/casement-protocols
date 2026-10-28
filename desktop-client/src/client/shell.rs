@@ -4,14 +4,14 @@ use wayland_client::protocol::wl_surface::WlSurface;
 use wayland_client::{Connection, Dispatch, QueueHandle};
 
 use casement_protocols::client::quire_shell_v1::quire_shell_v1::{self, QuireShellV1};
-use casement_protocols::vocab::{AskId, MacMods, TrialId, WindowEntries};
+use casement_protocols::vocab::{AskId, HeldMods, TrialId, WindowEntries};
 
 use super::wire::{Wire, raw, vocab};
 use crate::event::DesktopEvent;
 use crate::geometry::{Point, Rect};
 use crate::keys::SurfaceKey;
 use crate::names::{AppId, SpaceId, ToplevelIdentifier};
-use crate::quire::{DisplayTrial, PermissionAsk, QuireEvent, RevealOutput, ShellEvent};
+use crate::quire::{DisplayTrial, PermissionAsk, RevealOutput, ShellEvent};
 
 /// The key the caller registered `surface` under, if it did.
 fn key_of(wire: &Wire, surface: &WlSurface) -> Option<SurfaceKey> {
@@ -27,7 +27,7 @@ fn translate(wire: &Wire, event: quire_shell_v1::Event) -> Option<ShellEvent> {
     Some(match event {
         Event::Modifiers { surface, mods } => ShellEvent::Modifiers {
             surface: key_of(wire, &surface),
-            mods: MacMods(raw(mods)),
+            mods: HeldMods(raw(mods)),
         },
         Event::KeyGesture { gesture } => ShellEvent::KeyGesture(vocab(gesture)?),
         Event::SwitcherApp { index, app_key } => ShellEvent::SwitcherApp {
@@ -159,7 +159,7 @@ fn translate(wire: &Wire, event: quire_shell_v1::Event) -> Option<ShellEvent> {
 /// A shell event, reduced like any other.
 pub(super) fn on_shell(wire: &mut Wire, event: quire_shell_v1::Event) {
     if let Some(event) = translate(wire, event) {
-        wire.emit(DesktopEvent::Quire(QuireEvent::Shell(event)));
+        wire.emit(DesktopEvent::Shell(event));
     }
 }
 

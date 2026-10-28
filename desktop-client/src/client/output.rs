@@ -19,11 +19,11 @@ use crate::geometry::{Point, Size};
 use crate::keys::{ConfigId, HeadKey, ModeKey};
 use crate::names::OutputName;
 use crate::output::{
-    AdaptiveSync, ConfigError, ConfigOutcome, ConfigPurpose, Enabled, HeadChange,
-    HeadChangeRequest, HeadSettings, ModeChange, ModeChoice, OutputConfig, OutputEvent, Preferred,
-    RefreshMilliHz, ScaleMilli, Transform, complete,
+    ConfigError, ConfigOutcome, ConfigPurpose, HeadChange, HeadChangeRequest, HeadSettings,
+    ModeChange, ModeChoice, OutputConfig, OutputEvent, RefreshMilliHz, ScaleMilli, complete,
 };
 use crate::protocol::Protocol;
+use casement_protocols::vocab::{Transform, WireCode};
 
 fn output_event(wire: &mut Wire, event: OutputEvent) {
     wire.emit(DesktopEvent::Output(event));
@@ -84,7 +84,7 @@ pub(super) fn on_head(wire: &mut Wire, key: HeadKey, event: zwlr_output_head_v1:
             );
         }
         Event::Enabled { enabled } => {
-            head_change(wire, key, HeadChange::Enabled(Enabled::from_wire(enabled)));
+            head_change(wire, key, HeadChange::Enabled(enabled != 0));
         }
         Event::CurrentMode { mode } => {
             head_change(
@@ -95,7 +95,7 @@ pub(super) fn on_head(wire: &mut Wire, key: HeadKey, event: zwlr_output_head_v1:
         }
         Event::Position { x, y } => head_change(wire, key, HeadChange::Position(Point::new(x, y))),
         Event::Transform { transform } => {
-            if let Some(transform) = Transform::from_code(raw(transform)) {
+            if let Ok(transform) = Transform::from_code(raw(transform)) {
                 head_change(wire, key, HeadChange::Transform(transform));
             }
         }
@@ -108,11 +108,7 @@ pub(super) fn on_head(wire: &mut Wire, key: HeadKey, event: zwlr_output_head_v1:
             head_change(wire, key, HeadChange::SerialNumber(serial_number));
         }
         Event::AdaptiveSync { state } => {
-            head_change(
-                wire,
-                key,
-                HeadChange::AdaptiveSync(AdaptiveSync::from_code(raw(state))),
-            );
+            head_change(wire, key, HeadChange::AdaptiveSync(raw(state) == 1));
         }
         Event::Finished => {
             output_event(wire, OutputEvent::HeadFinished(key));
@@ -144,7 +140,7 @@ pub(super) fn on_mode(wire: &mut Wire, key: ModeKey, event: zwlr_output_mode_v1:
                 ModeChange::Refresh(RefreshMilliHz::new(extent(refresh))),
             );
         }
-        Event::Preferred => mode_change(wire, key, ModeChange::Preferred(Preferred::Yes)),
+        Event::Preferred => mode_change(wire, key, ModeChange::Preferred(true)),
         Event::Finished => {
             mode_change(wire, key, ModeChange::Finished);
             if let Some(mode) = wire.handles.modes.remove(&key)
@@ -250,7 +246,7 @@ fn set_head(wire: &Wire, target: &ZwlrOutputConfigurationHeadV1, settings: &Head
     }
     if let Some(transform) = settings
         .transform
-        .and_then(|t| wl_output::Transform::try_from(t.code()).ok())
+        .and_then(|t| t.to_wire::<wl_output::Transform>())
     {
         target.set_transform(transform);
     }
@@ -259,7 +255,7 @@ fn set_head(wire: &Wire, target: &ZwlrOutputConfigurationHeadV1, settings: &Head
     }
     if let Some(sync) = settings.adaptive_sync
         && target.version() >= zwlr_output_configuration_head_v1::REQ_SET_ADAPTIVE_SYNC_SINCE
-        && let Ok(state) = zwlr_output_head_v1::AdaptiveSyncState::try_from(sync.code())
+        && let Ok(state) = zwlr_output_head_v1::AdaptiveSyncState::try_from(u32::from(sync))
     {
         target.set_adaptive_sync(state);
     }

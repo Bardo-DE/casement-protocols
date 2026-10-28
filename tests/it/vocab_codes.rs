@@ -3,7 +3,7 @@
 
 use std::fmt::Debug;
 
-use casement_protocols::vocab::{self, MacMods, WireCode};
+use casement_protocols::vocab::{self, HeldMods, WireCode};
 use casement_protocols::{client, server};
 
 /// Codes past every enum's last, so a code only one side knows shows up.
@@ -31,9 +31,9 @@ where
     assert!(!V::ALL.is_empty(), "{what:?} has values");
 }
 
-/// One table for both sides: `$side` is `client` or `server`.
+/// One table for both sides: `$side` is `client` or `server`, `$wayland` its wayland crate.
 macro_rules! check_side {
-    ($side:ident) => {{
+    ($side:ident, $wayland:ident) => {{
         use $side::quire_agent_v1::{
             quire_agent_lease_v1 as lease, quire_agent_manager_v1 as agent,
         };
@@ -47,6 +47,7 @@ macro_rules! check_side {
             quire_trusted_manager_v1 as trusted, quire_trusted_surface_v1 as trusted_surface,
         };
         use $side::quire_window_v1::quire_window_v1 as quire_window;
+        use $wayland::protocol::wl_output;
 
         same_codes::<vocab::ActorKind, desktop::ActorKind>();
         same_codes::<vocab::ProofKind, app::ProofKind>();
@@ -97,33 +98,44 @@ macro_rules! check_side {
         same_codes::<vocab::TrustedAnchor, trusted::TrustedAnchor>();
         same_codes::<vocab::Withdrawn, trusted_surface::Withdrawn>();
 
+        // `wl_output.transform` is wayland's, not ours; the variant names differ (`_90`).
+        for code in PROBE.chain([u32::MAX]) {
+            let ours = vocab::Transform::from_code(code).ok();
+            let theirs = wl_output::Transform::try_from(code).ok();
+            assert_eq!(
+                ours.map(WireCode::code),
+                theirs.map(u32::from),
+                "transform {code}"
+            );
+        }
+
         let mods = [
-            (MacMods::NONE, shell::MacMods::None),
-            (MacMods::SHIFT, shell::MacMods::Shift),
-            (MacMods::CONTROL, shell::MacMods::Control),
-            (MacMods::OPTION, shell::MacMods::Option),
-            (MacMods::COMMAND, shell::MacMods::Command),
-            (MacMods::CAPS_LOCK, shell::MacMods::CapsLock),
-            (MacMods::FUNCTION, shell::MacMods::Function),
+            (HeldMods::NONE, shell::MacMods::None),
+            (HeldMods::SHIFT, shell::MacMods::Shift),
+            (HeldMods::CONTROL, shell::MacMods::Control),
+            (HeldMods::OPTION, shell::MacMods::Option),
+            (HeldMods::COMMAND, shell::MacMods::Command),
+            (HeldMods::CAPS_LOCK, shell::MacMods::CapsLock),
+            (HeldMods::FUNCTION, shell::MacMods::Function),
         ];
         for (ours, generated) in mods {
             assert_eq!(ours.0, generated.bits(), "{generated:?}");
         }
         let every = mods
             .iter()
-            .fold(MacMods::NONE, |set, (ours, _)| set.with(*ours));
+            .fold(HeldMods::NONE, |set, (ours, _)| set.with(*ours));
         assert_eq!(every.0, shell::MacMods::all().bits());
     }};
 }
 
 #[test]
 fn client_enums_have_the_vocab_codes_and_names() {
-    check_side!(client);
+    check_side!(client, wayland_client);
 }
 
 #[test]
 fn server_enums_have_the_vocab_codes_and_names() {
-    check_side!(server);
+    check_side!(server, wayland_server);
 }
 
 #[test]

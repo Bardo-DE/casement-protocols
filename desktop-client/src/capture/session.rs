@@ -7,7 +7,7 @@ use super::event::{CaptureEvent, CaptureFailure};
 use super::frame::{Frame, ShmFormat};
 use crate::geometry::{Rect, Size};
 use crate::keys::CaptureId;
-use crate::output::Transform;
+use casement_protocols::vocab::Transform;
 
 /// Where a capture is.
 #[derive(Debug, Clone, PartialEq, Eq)]

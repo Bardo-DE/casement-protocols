@@ -127,6 +127,53 @@ wire_enum! {
     }
 }
 
+impl PlaceTarget {
+    /// The tile zone this target names; `None` for fill, centre and restore.
+    pub fn zone(self) -> Option<TileZone> {
+        match self {
+            Self::Left => Some(TileZone::Left),
+            Self::Right => Some(TileZone::Right),
+            Self::Top => Some(TileZone::Top),
+            Self::Bottom => Some(TileZone::Bottom),
+            Self::TopLeft => Some(TileZone::TopLeft),
+            Self::TopRight => Some(TileZone::TopRight),
+            Self::BottomLeft => Some(TileZone::BottomLeft),
+            Self::BottomRight => Some(TileZone::BottomRight),
+            Self::Fill | Self::Centre | Self::Restore => None,
+        }
+    }
+}
+
+impl From<TileZone> for PlaceTarget {
+    fn from(zone: TileZone) -> Self {
+        match zone {
+            TileZone::Left => Self::Left,
+            TileZone::Right => Self::Right,
+            TileZone::Top => Self::Top,
+            TileZone::Bottom => Self::Bottom,
+            TileZone::TopLeft => Self::TopLeft,
+            TileZone::TopRight => Self::TopRight,
+            TileZone::BottomLeft => Self::BottomLeft,
+            TileZone::BottomRight => Self::BottomRight,
+        }
+    }
+}
+
+impl From<TileZone> for PlacementMark {
+    fn from(zone: TileZone) -> Self {
+        match zone {
+            TileZone::Left => Self::Left,
+            TileZone::Right => Self::Right,
+            TileZone::Top => Self::Top,
+            TileZone::Bottom => Self::Bottom,
+            TileZone::TopLeft => Self::TopLeft,
+            TileZone::TopRight => Self::TopRight,
+            TileZone::BottomLeft => Self::BottomLeft,
+            TileZone::BottomRight => Self::BottomRight,
+        }
+    }
+}
+
 wire_enum! {
     /// How much a window stands out (`quire_window_v1.emphasis`).
     Emphasis {

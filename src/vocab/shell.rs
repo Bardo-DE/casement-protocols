@@ -1,4 +1,4 @@
-//! Shell vocabulary: `quire_shell_v1`'s enums (its modifier bitfield is `MacMods`).
+//! Shell vocabulary: `quire_shell_v1`'s enums (its modifier bitfield is `HeldMods`).
 
 use super::code::{WireCode, wire_enum};
 use std::collections::BTreeSet;

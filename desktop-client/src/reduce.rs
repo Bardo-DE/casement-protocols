@@ -3,7 +3,10 @@
 use crate::capture::reduce_captures;
 use crate::event::DesktopEvent;
 use crate::output::reduce_outputs;
-use crate::quire::{QuireEvent, project_toplevels, reduce_quire};
+use crate::quire::{
+    Active, Quire, project_toplevels, reduce_app, reduce_note, reduce_space, reduce_window,
+    set_active,
+};
 use crate::state::DesktopState;
 use crate::toplevel::{ToplevelEvent, reduce_toplevels};
 use crate::workspace::reduce_workspaces;
@@ -25,7 +28,13 @@ pub fn reduce(state: DesktopState, event: DesktopEvent) -> DesktopState {
             captures: reduce_captures(state.captures, id, event),
             ..state
         },
-        DesktopEvent::Quire(e) => quire(state, e),
+        DesktopEvent::App(e) => quire(state, |q| reduce_app(q, e)),
+        DesktopEvent::Window(e) => quire(state, |q| reduce_window(q, e)),
+        DesktopEvent::Space(e) => quire(state, |q| reduce_space(q, e)),
+        DesktopEvent::Active { app, key, actor } => {
+            quire(state, |q| set_active(q, Active { app, key, actor }))
+        }
+        DesktopEvent::Shell(e) => quire(state, |q| reduce_note(q, e)),
     }
 }
 
@@ -42,9 +51,9 @@ fn toplevel(state: DesktopState, event: ToplevelEvent) -> DesktopState {
     }
 }
 
-/// A Quire event; the windows' state is then projected onto the toplevels.
-fn quire(state: DesktopState, event: QuireEvent) -> DesktopState {
-    let quire = reduce_quire(state.quire, event);
+/// A Quire event, applied by `step`; the windows' state is then projected onto the toplevels.
+fn quire(state: DesktopState, step: impl FnOnce(Quire) -> Quire) -> DesktopState {
+    let quire = step(state.quire);
     DesktopState {
         toplevels: project_toplevels(state.toplevels, &quire),
         quire,

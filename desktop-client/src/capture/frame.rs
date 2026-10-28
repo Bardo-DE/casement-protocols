@@ -3,7 +3,7 @@
 use std::time::Duration;
 
 use crate::geometry::{Rect, Size};
-use crate::output::Transform;
+use casement_protocols::vocab::Transform;
 
 /// A `wl_shm` pixel format by its wire code.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]

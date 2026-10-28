@@ -3,7 +3,6 @@
 use super::config::{HeadChangeRequest, HeadConfig, HeadSettings, ModeChoice, OutputConfig};
 use super::model::Head;
 use super::set::Outputs;
-use super::units::Enabled;
 
 /// The parts to send for `config`: each mentioned head with every setting it leaves open filled
 /// from the head's current state, then every enabled head the configuration does not mention,
@@ -25,7 +24,7 @@ pub fn complete(config: &OutputConfig, outputs: &Outputs) -> Vec<HeadConfig> {
         .collect();
     for head in outputs.heads() {
         let mentioned = config.heads.iter().any(|p| p.head == head.key);
-        if !mentioned && head.enabled == Enabled::On {
+        if !mentioned && head.enabled {
             parts.push(HeadConfig::new(
                 head.key,
                 HeadChangeRequest::Enable(fill(&HeadSettings::keep(), head)),
@@ -49,12 +48,7 @@ fn fill(settings: &HeadSettings, head: &Head) -> HeadSettings {
 fn current_mode(head: &Head) -> Option<ModeChoice> {
     let key = head
         .current_mode
-        .or_else(|| {
-            head.modes
-                .iter()
-                .find(|m| m.preferred == super::units::Preferred::Yes)
-                .map(|m| m.key)
-        })
+        .or_else(|| head.modes.iter().find(|m| m.preferred).map(|m| m.key))
         .or_else(|| head.modes.first().map(|m| m.key))?;
     Some(ModeChoice::Existing(key))
 }

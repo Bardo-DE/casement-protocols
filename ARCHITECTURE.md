@@ -76,15 +76,17 @@ desktop protocol names window, sensitive and agent enums; the shell protocol nam
 | --- | --- |
 | A wire value's code and its Rust type | `src/vocab/<area>.rs`, one `wire_enum!` per XML enum |
 | Code conversion (`code`, `from_code`, `ALL`) | `vocab::WireCode`, written by `wire_enum!` (`src/vocab/code.rs`) |
-| The Mac modifier view | `vocab::MacMods` (`src/vocab/mac_mods.rs`) |
-| Input receipt counts and digest | `vocab::{receipt_counts, receipt_digest}` (`src/vocab/receipt.rs`) |
+| The held modifier keys | `vocab::HeldMods` (`src/vocab/held_mods.rs`); the XML bitfield is still named `mac_mods` |
+| `wl_output.transform` | `vocab::Transform` (`src/vocab/output.rs`), used by casement, the desktop client and sill |
+| A vocab value's generated twin | `WireCode::to_wire` (`src/vocab/code.rs`) |
+| A tile zone as a target or a mark | `PlaceTarget::zone`, `From<TileZone>` for `PlaceTarget` and `PlacementMark` (`src/vocab/window.rs`) |
 | `RunMode` (docket re-exports it) | `vocab::RunMode` (`src/vocab/agent.rs`) |
 | `ActorKind` (prov's wire projection) | `vocab::ActorKind` (`src/vocab/actor.rs`) |
 | Generated bindings | `client::<protocol>`, `server::<protocol>` (`src/client.rs`, `src/server.rs`) |
 
 Vocab files: `window.rs` (window and placement enums), `app.rs`, `space.rs`, `shell.rs`,
-`mac_mods.rs`, `agent.rs` (lease enums, `LeaseState`, `PressEdge`), `sensitive.rs`,
-`trusted.rs`, `actor.rs`, `receipt.rs`, `privilege.rs` (the seven `Power`s with the words a
+`held_mods.rs`, `output.rs`, `agent.rs` (lease enums, `LeaseState`, `PressEdge`), `sensitive.rs`,
+`trusted.rs`, `actor.rs`, `privilege.rs` (the seven `Power`s with the words a
 person reads for each, `SubjectKind`, `Memory`, `Answer`, `AskId`). A vocab enum whose concept carries data in
 casement-core is named `…Kind` (`WindowStateKind`, `SpaceKind`, `AppLifeKind`).
 
@@ -132,9 +134,8 @@ reads the same as the protocol.
 | File | Proves |
 | --- | --- |
 | `tests/it/xml_introspection.rs` | every file parses and is named after itself; every file has a row in section 2 that says `casement` or `not served yet`, and its XML says `Not served yet:` exactly when the row does; every interface is `quire_*_v1` at version 1 (the shell's global at 5 and the window manager at 2, their newer messages last and saying `since=`); every request and event with its arguments, in opcode order, as frozen; error enums; codes dense from 0 (bitfields: single bits); every vocab enum has its XML enum's names and codes and every XML enum has a vocab type; cross-references resolve; the licence notice; `quire-agent-v1.xml`'s pinned bytes; with both features, the generated interfaces' names, versions and messages |
-| `tests/it/vocab_codes.rs` | (features `client,server`) every vocab enum accepts exactly the codes the generated enum accepts, with the same variant names, on both sides; `MacMods` bits |
+| `tests/it/vocab_codes.rs` | (features `client,server`) every vocab enum accepts exactly the codes the generated enum accepts, with the same variant names, on both sides; `HeldMods` bits and `Transform` against `wl_output` |
 | `tests/it/round_trip.rs` | every vocab value round-trips through serde and its code; pinned JSON for stored forms |
-| `tests/it/receipt.rs` | receipt counts (table) and a pinned digest |
 
 `tests/it/support/mod.rs` reads the XML into plain data with quick-xml; `tests/it/support/frozen.rs`
 holds the frozen interface as tables (every message with its arguments, every error enum).
@@ -225,9 +226,8 @@ object's `…Change`/`…Event`, its row in `quire/<object>.rs` `apply`, the dis
 Rules: the core names no `wayland_*` crate and does no I/O; the wire layer reads the
 environment only for `WaylandRoute::Environment`, which the caller picks (otherwise the caller
 passes the `Connection`); a proxy never enters the state, a key does
-(`ToplevelKey` and the others in `keys.rs`), and `Handles` maps keys back to proxies; no
-`bool` in a field or parameter (`Enabled`, `Preferred`, `CursorMode`, `Supports`,
-`Advance`); every growing public type is `non_exhaustive` with a constructor.
+(`ToplevelKey` and the others in `keys.rs`), and `Handles` maps keys back to proxies; types follow `CONVENTIONS.md` rule 4 (`bool` for a two-way fact: `Head::enabled`, `Mode::preferred`,
+`supports`); every growing public type is `non_exhaustive` with a constructor.
 
 Consumers: sill maps `DesktopState` into its `DesktopView` (app grouping, most-recently-used
 order and Spaces are sill's); cua's toplevel client moves onto it later; `casementctl shot`

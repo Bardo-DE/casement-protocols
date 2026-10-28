@@ -8,9 +8,9 @@ mod actor;
 mod agent;
 mod app;
 mod code;
-mod mac_mods;
+mod held_mods;
+mod output;
 mod privilege;
-mod receipt;
 mod sensitive;
 mod shell;
 mod space;
@@ -22,9 +22,9 @@ pub use actor::ActorKind;
 pub use agent::{GlowCode, LeaseState, MaskReason, PressEdge, RevokeReason, RunMode, Suspend};
 pub use app::{AppLifeKind, AppVisibility, Attention, MenuSourceKind, ProofKind};
 pub use code::{CodeError, WireCode};
-pub use mac_mods::MacMods;
+pub use held_mods::HeldMods;
+pub use output::Transform;
 pub use privilege::{Answer, AskId, Memory, Power, SubjectKind};
-pub use receipt::{ReceiptCounts, ReceiptDigest, ReceiptItem, receipt_counts, receipt_digest};
 pub use sensitive::SensitivityLevel;
 pub use shell::{
     Corner, DragOutcome, FullScreenBar, KeyGesture, Motion, OverviewMode, OverviewState,

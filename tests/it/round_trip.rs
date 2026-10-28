@@ -5,13 +5,12 @@ use std::fmt::Debug;
 
 use casement_protocols::vocab::{
     ActorKind, Answer, AppLifeKind, AppVisibility, Assign, Attention, CodeError, Corner,
-    DragOutcome, Edited, Emphasis, FrameMode, GlowCode, KeyGesture, LeaseState, MacMods,
+    DragOutcome, Edited, Emphasis, FrameMode, GlowCode, HeldMods, KeyGesture, LeaseState,
     MaskReason, Memory, MenuSourceKind, Modality, OverviewMode, OverviewState, PlaceKind,
-    PlaceTarget, PlacementMark, Power, PressEdge, ProofKind, ReceiptCounts, ReceiptDigest,
-    ReceiptItem, Responsiveness, RevokeReason, RunMode, ScreenEdge, SensitivityLevel, ShellRole,
-    Shown, SpaceActivity, SpaceKind, SplitSide, SubjectKind, Suspend, TileZone, Toggle,
-    TrialAnswer, TrustedAnchor, TrustedKind, WindowEntry, WindowRole, WindowStateKind, WireCode,
-    Withdrawn,
+    PlaceTarget, PlacementMark, Power, PressEdge, ProofKind, Responsiveness, RevokeReason, RunMode,
+    ScreenEdge, SensitivityLevel, ShellRole, Shown, SpaceActivity, SpaceKind, SplitSide,
+    SubjectKind, Suspend, TileZone, Toggle, Transform, TrialAnswer, TrustedAnchor, TrustedKind,
+    WindowEntry, WindowRole, WindowStateKind, WireCode, Withdrawn,
 };
 use serde::Serialize;
 use serde::de::DeserializeOwned;
@@ -92,6 +91,7 @@ fn every_vocab_enum_round_trips() {
     every_value_round_trips::<TrustedAnchor>("TrustedAnchor");
     every_value_round_trips::<Withdrawn>("Withdrawn");
     every_value_round_trips::<ActorKind>("ActorKind");
+    every_value_round_trips::<Transform>("Transform");
 }
 
 #[test]
@@ -109,65 +109,25 @@ fn consumers_stored_forms_are_unchanged() {
 }
 
 #[test]
-fn mac_mods_is_its_bits() {
-    let chord = MacMods::COMMAND.with(MacMods::SHIFT);
+fn held_mods_is_its_bits() {
+    let chord = HeldMods::COMMAND.with(HeldMods::SHIFT);
     assert_eq!(round_trips(&chord), "9");
 }
 
 #[test]
-fn receipt_items_are_adjacently_tagged() {
-    const CASES: &[(&str, ReceiptItem, &str)] = &[
-        (
-            "motion",
-            ReceiptItem::Motion { x: 3, y: -4 },
-            r#"{"kind":"motion","v":{"x":3,"y":-4}}"#,
-        ),
-        (
-            "button",
-            ReceiptItem::Button {
-                code: 272,
-                edge: PressEdge::Press,
-            },
-            r#"{"kind":"button","v":{"code":272,"edge":"press"}}"#,
-        ),
-        (
-            "key",
-            ReceiptItem::Key {
-                code: 30,
-                edge: PressEdge::Release,
-            },
-            r#"{"kind":"key","v":{"code":30,"edge":"release"}}"#,
-        ),
-        (
-            "text",
-            ReceiptItem::Text { chars: 2, fnv: 7 },
-            r#"{"kind":"text","v":{"chars":2,"fnv":7}}"#,
-        ),
-        (
-            "scroll",
-            ReceiptItem::Scroll {
-                dx120: 0,
-                dy120: -120,
-            },
-            r#"{"kind":"scroll","v":{"dx120":0,"dy120":-120}}"#,
-        ),
-    ];
-    for (case, item, json) in CASES {
-        assert_eq!(round_trips(item), *json, "{case}");
+fn a_tile_zone_names_the_same_place_in_every_enum() {
+    for zone in TileZone::ALL {
+        let target = PlaceTarget::from(*zone);
+        assert_eq!(target.zone(), Some(*zone), "{zone:?}");
+        assert_eq!(target.code(), zone.code(), "{zone:?} has one code in both");
+        let mark = PlacementMark::from(*zone);
+        assert_eq!(
+            format!("{mark:?}"),
+            format!("{zone:?}"),
+            "{zone:?} keeps its name as a mark"
+        );
     }
-}
-
-#[test]
-fn receipt_counts_and_digest_round_trip() {
-    let counts = ReceiptCounts {
-        events: 7,
-        presses: 1,
-        keys: 1,
-        text_chars: 2,
-    };
-    assert_eq!(
-        round_trips(&counts),
-        r#"{"events":7,"presses":1,"keys":1,"text_chars":2}"#
-    );
-    round_trips(&ReceiptDigest([1, 2, 3, 4, 5, 6, 7, 8]));
+    for target in [PlaceTarget::Fill, PlaceTarget::Centre, PlaceTarget::Restore] {
+        assert_eq!(target.zone(), None, "{target:?}");
+    }
 }
