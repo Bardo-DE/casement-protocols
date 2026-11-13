@@ -8,7 +8,7 @@ edition = "2024"
 license = "MIT OR Apache-2.0"
 # What quire declares; the toolchain itself is pinned in rust-toolchain.toml.
 rust-version = "1.92"
-repository = "https://github.com/PoHsuanLai/casement-protocols"
+repository = "https://github.com/Bardo-DE/casement-protocols"
 publish = false
 
 [workspace.dependencies]
