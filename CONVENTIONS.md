@@ -1,35 +1,28 @@
 # Conventions
 
-casement-protocols follows the program's shared conventions, whose text lives in quire's
-`CONVENTIONS.md` (identical in quire, sill, shell-host, palmrest and detent): types, traits,
-effects, errors, tests, comments, change discipline, borrowing. Read it first (its type rules are
-replaced by rule 4 below). `ARCHITECTURE.md`
-here adds the protocol map, the one-home table, the trait, the recipes and the repo rules; where
-the two disagree, `ARCHITECTURE.md` wins for this repo.
+This repo follows the published Rust guides instead of a house style:
 
-What this repo adds or decides differently, each with its reason:
+- [Rust Style Guide](https://doc.rust-lang.org/style-guide/): formatting. `cargo fmt` applies it.
+- [Rust API Guidelines](https://rust-lang.github.io/api-guidelines/): naming, API shape,
+  documentation, interoperability.
+- [Microsoft Pragmatic Rust Guidelines](https://microsoft.github.io/rust-guidelines/): libraries,
+  applications, errors, safety, performance, documentation.
 
-1. **Closed sets are `wire_enum!`s implementing `WireCode`, not quire's `Word`.** This crate is
-   a leaf below quire (quire's `ds-blitz` depends on it), so it cannot depend on `ds-core`. A
-   value's stable slug is its serde `snake_case` form, which is also its XML entry name;
-   labels a person reads belong to the UI that draws them.
-2. **The XML is the interface.** The vocab and the bindings follow it; a test fails when either
-   drifts from it. A wire change starts in the XML.
-3. **Generated bindings are exempt from the style rules** (names, docs, `#[non_exhaustive]`):
-   they are wayland-scanner's output, kept behind `client` and `server`, and nothing hand-written
-   lives in those modules.
-4. **Types: plain Rust first** (owner, 2026-10-28; replaces "no bool in a field or parameter" and
-   "never `dyn`").
-   - `bool` is fine for fields, return values, locals and private functions. Use an enum only when
-     a public function would read as `f(true, false)`, a third state is realistic, or the value is
-     written to disk or the bus where a named word reads better.
-   - Newtypes only when they hold a rule: parsed or validated, a unit (`ScaleMilli`,
-     `RefreshMilliHz`), or an id that must not be mixed with another.
-   - Enums for closed sets the code branches on; a set that grows is data.
-   - Behaviour that differs by case is a trait with default methods. Generics by default;
-     `Box<dyn Trait>` is fine when the implementation is chosen from configuration at run time.
-   - One fact, one type: no mirror enums across crates; a field-less view of an enum is a method
-     (`PlaceTarget::zone`, `WireCode::to_wire`), not a second declaration. The lower crate owns
-     it: `vocab::Transform` is `wl_output.transform` for the compositor, the client and the shell.
-   - Two-way outcomes are `Result` or `Option`, not a two-arm enum (`supports` is a `bool`).
-   - If the type can say it, no runtime check says it.
+## Design
+
+On top of the guides, write Rust roughly the way you would write Haskell:
+
+1. **Push IO to the edges.** Decisions live in pure functions: data in, data out, for example
+   `step(state, event) -> (state, effects)`. A thin shell reads the world, calls the core and
+   carries out the effects it returns. No IO, clocks or threads inside the core.
+   See [Functional Core, Imperative Shell](https://www.destroyallsoftware.com/screencasts/catalog/functional-core-imperative-shell)
+   and [sans-IO](https://firezone.dev/blog/sans-io).
+2. **Let types carry the facts.** Parse input once, at the edge, into types that only hold valid
+   values, and don't check again past it. Use enums so impossible states can't be written.
+   See [Parse, don't validate](https://lexi-lambda.github.io/blog/2019/11/05/parse-don-t-validate/)
+   and [Type-Driven API Design in Rust](https://willcrichton.net/rust-api-type-patterns/).
+3. **Judgement, not rules.** These are directions, not quotas. A `bool`, a `String` or a plain
+   struct is fine when a type would add nothing. Don't add a newtype or a state machine that no
+   bug and no reader needs.
+
+The repo's own structure (crates, layers, where each concept lives) is in ARCHITECTURE.md.
