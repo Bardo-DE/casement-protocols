@@ -208,7 +208,8 @@ offered, else wlr, else the ext list alone. On the Quire arm the plain window co
 (`Activate`, `Close`, `Minimise`, ...) go to `quire_desktop_window_v1`, the wlr manager is not
 bound, and a window is the ext handle (title, app id, identifier) plus the Quire window
 (everything else) under one `ToplevelKey`: `Linker` matches the manager's window object to the
-ext handle by identifier, whichever arrives first. The reducer projects the Quire state onto
+ext handle by identifier, whichever arrives first, and resends the manager's `active` once its
+key window links, so a window that is focused before its handle arrives still becomes key. The reducer projects the Quire state onto
 `Toplevel.flags` (filled is maximised, the key window is activated), `parent` and `outputs`, so
 a consumer that reads only toplevels is unchanged. `quire_shell_v1` is bound only when the
 caller says it holds the shell role (`DesktopConfig::holding_shell()`); `admit` returns

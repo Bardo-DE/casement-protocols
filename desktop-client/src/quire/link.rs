@@ -3,15 +3,18 @@
 //! `quire_desktop_v1` announces every window as its own object, and `ext-foreign-toplevel-list`
 //! announces the same window as a handle; both carry the same identifier string. [`Linker`]
 //! matches them whichever arrives first and holds a window's events until its handle is known,
-//! so the reducer only ever sees a window under its toplevel's key. It is pure: the wire layer
-//! feeds it and emits what it returns.
+//! so the reducer only ever sees a window under its toplevel's key. The manager's `active` event
+//! names its key window by object, so it goes through the linker too: when that window is not
+//! linked yet, the key is sent again the moment it links. It is pure: the wire layer feeds it and
+//! emits what it returns.
 
 use std::collections::BTreeMap;
 
 use super::window::{WindowChange, WindowEvent};
 use crate::event::DesktopEvent;
-use crate::keys::{ToplevelKey, key};
+use crate::keys::{AppKey, ToplevelKey, key};
 use crate::names::ToplevelIdentifier;
+use casement_protocols::vocab::ActorKind;
 
 key! {
     /// The client's number for a window object (its protocol id).
@@ -37,6 +40,14 @@ enum Standing {
     Linked(ToplevelKey),
 }
 
+/// The latest `active` event, when its key window was not linked yet.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct PendingActive {
+    app: Option<AppKey>,
+    window: WindowObject,
+    actor: ActorKind,
+}
+
 /// Matches window objects with ext handles by identifier.
 ///
 /// ```
@@ -55,6 +66,7 @@ enum Standing {
 pub struct Linker {
     listed: BTreeMap<ToplevelIdentifier, ToplevelKey>,
     objects: BTreeMap<WindowObject, Standing>,
+    pending_active: Option<PendingActive>,
 }
 
 impl Linker {
@@ -149,6 +161,23 @@ impl Linker {
         }
     }
 
+    /// The manager named the active app and its key window. Returns the `Active` event; when
+    /// the key window is not linked yet, the event says no key window for now, and `Active` is
+    /// sent again with the key when that window links (unless a later `active` replaced it).
+    pub fn active(
+        &mut self,
+        app: Option<AppKey>,
+        window: Option<WindowObject>,
+        actor: ActorKind,
+    ) -> Vec<DesktopEvent> {
+        let key = window.and_then(|w| self.key_of(w));
+        self.pending_active = match (window, key) {
+            (Some(window), None) => Some(PendingActive { app, window, actor }),
+            _ => None,
+        };
+        vec![DesktopEvent::Active { app, key, actor }]
+    }
+
     /// A window object's burst is complete.
     pub fn done(&mut self, object: WindowObject) -> Vec<DesktopEvent> {
         match self.objects.get_mut(&object) {
@@ -166,6 +195,9 @@ impl Linker {
 
     /// A window object closed (its last event).
     pub fn closed(&mut self, object: WindowObject) -> Vec<DesktopEvent> {
+        if self.pending_active.is_some_and(|p| p.window == object) {
+            self.pending_active = None;
+        }
         match self.objects.remove(&object) {
             Some(Standing::Linked(key)) => vec![window_event(WindowEvent::Closed(key))],
             _ => Vec::new(),
@@ -182,7 +214,8 @@ impl Linker {
         );
     }
 
-    /// Links `object` to `key` and returns `Opened` and everything held, in order.
+    /// Links `object` to `key` and returns `Opened` and everything held, in order, then `Active`
+    /// if `object` is the key window an earlier `active` was waiting for.
     fn link(&mut self, object: WindowObject, key: ToplevelKey) -> Vec<DesktopEvent> {
         let held = match self.objects.insert(object, Standing::Linked(key)) {
             Some(Standing::Waiting { held, .. }) => held,
@@ -195,6 +228,13 @@ impl Linker {
                 Held::Done => WindowEvent::Done(key),
             })
         }));
+        if let Some(p) = self.pending_active.take_if(|p| p.window == object) {
+            events.push(DesktopEvent::Active {
+                app: p.app,
+                key: Some(key),
+                actor: p.actor,
+            });
+        }
         events
     }
 }

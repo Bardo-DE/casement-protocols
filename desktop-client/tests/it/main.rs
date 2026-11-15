@@ -5,6 +5,7 @@
 //! layer needs a real compositor and has no test here; it is kept thin so the reducers carry
 //! the logic.
 
+mod active_link;
 mod backend;
 mod capture;
 #[cfg(feature = "fake")]

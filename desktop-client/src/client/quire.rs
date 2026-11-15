@@ -55,11 +55,10 @@ pub(super) fn on_manager(
         }
         Event::Active { app, key, actor } => {
             let app = app.as_ref().map(|a| AppKey::new(number_of(a)));
-            let key = key
-                .as_ref()
-                .and_then(|w| wire.linker.key_of(WindowObject::new(number_of(w))));
+            let window = key.as_ref().map(|w| WindowObject::new(number_of(w)));
             let actor = vocab(actor).unwrap_or(ActorKind::Unknown);
-            wire.emit(DesktopEvent::Active { app, key, actor });
+            let events = wire.linker.active(app, window, actor);
+            emit_all(wire, events);
         }
         Event::Finished => {
             proxy.destroy();
