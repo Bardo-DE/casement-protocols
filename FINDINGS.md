@@ -361,7 +361,7 @@ say `since="6"`.
 
 ## Type rule 4 and the enum audit (2026-10-28)
 
-- CONVENTIONS rule 4 (plain Rust first) replaces "no bool" and "never `dyn`". Done under it:
+- Plain Rust first replaces "no bool" and "never `dyn`". Done under it:
   `Enabled`, `Preferred`, `AdaptiveSync` and `Supports` are `bool`s (`Head::enabled`, `Mode::preferred`,
   `Option<bool>` adaptive sync, `supports() -> bool`); `desktop_client::output::Transform` and casement's
   copy are one `vocab::Transform` (`R90` spelling, snake_case serde as casement stored it);

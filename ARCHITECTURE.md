@@ -226,7 +226,7 @@ object's `…Change`/`…Event`, its row in `quire/<object>.rs` `apply`, the dis
 Rules: the core names no `wayland_*` crate and does no I/O; the wire layer reads the
 environment only for `WaylandRoute::Environment`, which the caller picks (otherwise the caller
 passes the `Connection`); a proxy never enters the state, a key does
-(`ToplevelKey` and the others in `keys.rs`), and `Handles` maps keys back to proxies; types follow `CONVENTIONS.md` rule 4 (`bool` for a two-way fact: `Head::enabled`, `Mode::preferred`,
+(`ToplevelKey` and the others in `keys.rs`), and `Handles` maps keys back to proxies; types are plain Rust (`bool` for a two-way fact: `Head::enabled`, `Mode::preferred`,
 `supports`); every growing public type is `non_exhaustive` with a constructor.
 
 Consumers: sill maps `DesktopState` into its `DesktopView` (app grouping, most-recently-used
